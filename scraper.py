@@ -66,4 +66,4 @@ def get_parking_data():
     return jsonify(parking_data)
 
 if __name__ == "__main__":
-    app.run(debug=True, port=5000)  # Change the port number here
+    app.run(debug=True, port=5001)  # Change the port number here

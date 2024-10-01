@@ -1,55 +1,82 @@
 document.addEventListener('DOMContentLoaded', function () {
     // Function to fetch and update parking data
-    function updateParkingData() {
-        fetch('/get_parking_data')
-            .then(response => response.json())
-            .then(data => {
-                const parkingDataContainer = document.getElementById('parking-data');
-                parkingDataContainer.innerHTML = ''; // Clear previous data
+    // Function to update parking data and add animations
+// Function to update parking data and add animations
+function updateParkingData() {
+    fetch('/get_parking_data')
+        .then(response => response.json())
+        .then(data => {
+            const parkingDataContainer = document.getElementById('parking-data');
+            parkingDataContainer.innerHTML = ''; // Clear previous data
 
-                data.forEach(lot => {
-                    const lotElement = document.createElement('div');
-                    lotElement.classList.add('lot');
+            data.forEach(lot => {
+                const lotElement = document.createElement('div');
+                lotElement.classList.add('lot');
 
-                    // Calculate the percentage of available spots
-                    const availableSpots = parseInt(lot.available_spots);
-                    const totalSpots = parseInt(lot.total_spots);
-                    let percentage = 0;
+                const availableSpots = parseInt(lot.available_spots);
+                const totalSpots = parseInt(lot.total_spots);
 
-                    if (!isNaN(availableSpots) && !isNaN(totalSpots) && totalSpots > 0) {
-                        percentage = ((availableSpots / totalSpots) * 100).toFixed(2);
-                    }
+                let percentage = 0;
+                if (!isNaN(availableSpots) && !isNaN(totalSpots) && totalSpots > 0) {
+                    percentage = ((availableSpots / totalSpots) * 100).toFixed(2);
+                }
 
-                    // Create HTML structure for each parking lot with progress bar
-                    lotElement.innerHTML = `
-                        <h3>${lot.lot_name}</h3>
-                        <p>Available Spots: ${lot.available_spots}</p>
-                        <p>Total Spots: ${lot.total_spots}</p>
-                        <div class="progress-container">
-                            <div class="progress-bar" style="width: 0%;" data-percentage="${percentage}"></div>
-                        </div>
-                        <p class="progress-text">${percentage}% Available</p>
-                        <button 
-                            class="alert-button" 
-                            data-lot="${lot.lot_name}" 
-                            data-available="${lot.available_spots}" 
-                            data-total="${lot.total_spots}">
-                            Check Availability
-                        </button>
-                    `;
+                // Create HTML structure for each parking lot
+                lotElement.innerHTML = `
+                    <h3>${lot.lot_name}</h3>
+                    <p>Available Spots: ${lot.available_spots}</p>
+                    <p>Total Spots: ${lot.total_spots}</p>
+                    <div class="progress-bar-container">
+                        <div class="progress-bar" data-percentage="${percentage}"></div>
+                    </div>
+                    <p>${percentage}% Available</p>
+                    <button 
+                        class="alert-button" 
+                        data-lot="${lot.lot_name}" 
+                        data-available="${lot.available_spots}" 
+                        data-total="${lot.total_spots}">
+                        Check Availability
+                    </button>
+                `;
 
-                    // Append to the container
-                    parkingDataContainer.appendChild(lotElement);
-                });
+                // Append the lot element to the container
+                parkingDataContainer.appendChild(lotElement);
+            });
 
-                // Animate the progress bars after they are added to the DOM
-                animateProgressBars();
+            // Rebind alert buttons
+            bindAlertButtons();
 
-                // Rebind alert buttons
-                bindAlertButtons();
-            })
-            .catch(error => console.error('Error fetching parking data:', error));
-    }
+            // After rendering, start observing the progress bars
+            observeProgressBars();
+        })
+        .catch(error => console.error('Error fetching parking data:', error));
+}
+
+// Function to observe when progress bars come into view
+function observeProgressBars() {
+    const progressBars = document.querySelectorAll('.progress-bar');
+
+    // Set up Intersection Observer
+    const observer = new IntersectionObserver((entries, observer) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                // Get the percentage from data attribute and animate the bar
+                const progressBar = entry.target;
+                const percentage = progressBar.getAttribute('data-percentage');
+                progressBar.style.width = `${percentage}%`;
+                observer.unobserve(progressBar); // Stop observing once animation is triggered
+            }
+        });
+    }, {
+        threshold: 0.2 // Trigger the animation when 20% of the progress bar is visible
+    });
+
+    // Observe each progress bar
+    progressBars.forEach(bar => {
+        observer.observe(bar);
+    });
+}
+
 
     // Function to bind alert buttons
     function bindAlertButtons() {
